@@ -1,0 +1,428 @@
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <stdexcept>
+using namespace std;
+
+const int not_a_square_matrix = 0;
+const int out_of_array = 1;
+
+class Error
+{
+private:
+	int err_type;
+public:
+	Error(int i) : err_type(i) {};
+	int ErrType() const
+	{
+		return err_type;
+	}
+	~Error(){};
+};
+
+class Zn //множество вычетов по модулю 5
+{
+private:
+	unsigned int c; //образ числа
+
+public:
+	Zn()
+	{
+		c = 0;
+	}
+	Zn(int n_v) : c(n_v % 5){};
+
+	Zn operator + (const Zn& obj) //сложение по модулю 5
+	{
+		return (c + obj.c);
+	}
+
+	Zn operator * (const Zn& obj) //умножение по модулю 5
+	{
+		Zn result;
+		result.c = (c * obj.c);
+		return result;
+	}
+
+	friend fstream& operator << (fstream&, Zn&);
+	friend istream& operator >> (istream&, Zn&);
+	friend ostream& operator << (ostream&, Zn&);
+	~Zn(){}; //деструктор
+};
+istream& operator >> (istream& f, Zn& obj)
+{
+	return f >> obj.c;
+}
+ostream& operator << (ostream& c, Zn& obj)
+{
+	c << obj.c;
+	return c;
+}
+
+void addNum(int& k/*, T param*/) //bind???
+{
+	k+=5;
+}
+
+
+template <class T>
+class MatrixZn
+{
+private:
+	T** matr;//сама матрица
+	unsigned int n; //строки
+	unsigned int m; //столбцы
+
+public:
+	MatrixZn(T** matr_v, int n_v, int m_v) : n(n_v), m(m_v)
+	{
+		if (n != m) throw Error(not_a_square_matrix);
+		T** matr = new T*[n];
+		for (unsigned int i = 0; i < n; i++)
+		{
+			matr[i] = new T[m];
+		}
+		for (unsigned int i = 0; i < n; i++)
+		{
+			for (unsigned int j = 0; j < m; j++)
+			{
+				matr[i][j] = matr_v[i][j];
+			}
+		}
+	}
+	MatrixZn(int n_v, int m_v, T** matr_v = nullptr) : n(n_v), m(m_v)
+	{
+		T** matr = new T*[n];
+		for (unsigned int i = 0; i < n; i++)
+		{
+			matr[i] = new T[m];
+		}
+		for (unsigned int i = 0; i < n; i++)
+		{
+			for (unsigned int j = 0; j < m; j++)
+			{
+				matr[i][j] = 0;
+			}
+		}
+		if (matr_v)
+		{
+			for (unsigned int i = 0; i < n; i++)
+			{
+				for (unsigned int j = 0; j < m; j++)
+				{
+					matr[i][j] = matr_v[i][j];
+				}
+			}
+		}
+		
+	}
+	MatrixZn(const MatrixZn& obj) //конструктор копирования
+	{
+		n = obj.n;
+		m = obj.m;
+		T** matr = new T*[n];
+		for (unsigned int i = 0; i < n; i++)
+		{
+			matr[i] = new T[m];
+		}
+		for (unsigned int i = 0; i < n; i++)
+		{
+			for (unsigned int j = 0; j < m; j++)
+			{
+				matr[i][j] = obj.matr[i][j];
+			}
+		}
+	}
+	MatrixZn operator * (const T& obj) //умножение на объект класса Zn
+	{
+		MatrixZn result(*this);
+		for (unsigned int i = 0; i < n; i++)
+		{
+			for (unsigned int j = 0; j < m; j++)
+			{
+				result.matr[i][j] = matr[i][j] * obj;
+			}
+		}
+		return result;
+	}
+	MatrixZn& operator ~()//транспонирование для квадратных матриц
+	{
+		for (unsigned int i = 0; i < n; i++)
+		{
+			for (unsigned int j = i; j < m; j++)
+			{
+				T k(matr[i][j]);
+				matr[i][j] = matr[j][i];
+				matr[j][i] = k;
+			}
+		}
+		return *this;
+	}
+	MatrixZn operator | (const MatrixZn& obj) //конкатенация
+	{
+		MatrixZn mid(n, m + obj.m);
+		MatrixZn concat(mid);
+		for (unsigned int i = 0; i < n; i++)
+		{
+			for (unsigned int j = 0; j < m; j++)
+			{
+				concat.matr[i][j] = matr[i][j];
+			}
+			for (unsigned int j = 0; j < obj.m; j++)
+			{
+				concat.matr[i][j + m] = obj.matr[i][j];
+			}
+		}
+		return concat;
+	}
+	T& operator () (unsigned int i, unsigned int j) //получение элемента матрицы по индексу   
+	{
+		if ((i >= n) || (j >= m))
+		{
+			throw Error(out_of_array);
+		}
+		else
+		{
+			return matr[i][j];
+		}
+	}
+
+	class Iterator : public iterator<input_iterator_tag, T>
+	{
+		T** matrI;
+		int nI;//строки
+		int mI;//столбцы
+		int index;
+	public:
+		Iterator(T** matr, int n, int m, int it): nI(n), mI(m), matrI(matr), index(it){};
+		Iterator operator ++()
+		{
+			index++;
+			return *this;
+		}
+
+		T& operator *()
+		{
+			if (index >= nI*mI)
+				throw out_of_range("out of range");
+			return matrI[index/nI][index % nI];
+		}
+
+		Iterator operator + (int n)
+		{
+			if (index + n >= nI*mI)
+				throw out_of_range("out of range");
+			index += n;
+			return *this;
+		}
+		T* operator -> ()
+		{
+			if (index >= nI*mI)
+				throw out_of_range("out of range");
+			return *(matrI[index/n][insdex % n]);
+		}
+		bool operator !=(Iterator obj)
+		{
+			return true;
+		}
+
+		bool operator ==(Iterator obj)
+		{
+			return true;
+		}
+
+	};
+
+	Iterator begin()
+	{
+		return Iterator(matr, n, m, 0);
+	}
+	Iterator end()
+	{
+		return Iterator(matr, n, m, n*m);
+	}
+
+
+
+	friend fstream& operator << (fstream&, MatrixZn&);
+	friend fstream& operator >> (fstream&, MatrixZn&);
+	template <class T>
+	friend ostream& operator << (ostream& c, MatrixZn<T>& obj);
+
+	~MatrixZn()
+	{
+		for (unsigned int i = 0; i < n; i++)
+		{
+			delete [] matr[i];
+		}
+		delete[] matr;
+	}
+};
+
+template <class T>
+fstream& operator >> (fstream& f, MatrixZn<T>& obj) ///////////////////////////////////////////////
+{
+	char c = '\0';
+	f.seekg(0, ios_base::beg);
+	unsigned int col = obj.m;
+	unsigned int str = obj.n;
+	for (unsigned i = 0; i < str; i++)
+	{
+		for (unsigned int j = 0; j < col; j++)
+		{
+			f >> obj.matr[i][j];
+		}
+	}
+	return f;
+}
+
+template <class T>
+fstream& operator << (fstream& f, MatrixZn<T>& obj)
+{
+	for (unsigned int i = 0; i < obj.n; i++)
+	{
+		for (unsigned int j = 0; j < obj.m; j++)
+		{
+			f << obj.matr[i][j];
+			f << "  ";
+		}
+		f << endl;
+	}
+	return f;
+}
+
+template <class T>
+ostream& operator << (ostream& c, MatrixZn<T>& obj)
+{
+	for (unsigned int i = 0; i < obj.n; i++)
+	{
+		for (unsigned int j = 0; j < obj.m; j++)
+		{
+			c << obj.matr[i][j];
+			c << "  ";
+		}
+		c << endl;
+	}
+	return c;
+}
+
+int** create_M1()
+{
+	int** contrM = new int*[2];
+	for (int i = 0; i < 3; i++)
+	{
+		contrM[i] = new int[2];
+	}
+	for (int i = 0; i < 2; i++)
+	{
+		for (int j = 0; j < 2; j++)
+		{
+			contrM[i][j] = rand() % 10 + 1;
+		}
+	}
+	return contrM;
+}
+int** create_M2()
+{
+	int** contrM2 = new int*[2];
+	for (int i = 0; i < 2; i++)
+	{
+		contrM2[i] = new int[2];
+	}
+	for (int i = 0; i < 2; i++)
+	{
+		for (int j = 0; j < 2; j++)
+		{
+			contrM2[i][j] = rand() % 10 + 1;
+		}
+	}
+	return contrM2;
+}
+
+//template <>
+//class Vector
+//{
+//	char* arr;
+//public:
+//};
+
+
+int main()
+{
+	//try
+	//{
+		/*поток fstream - по умолчанию открывается для ввода вывода
+		ifstream - по умолчанию для ввода
+		ofstreamи - по умолчанию для вывода*/
+	//	Zn c1(4);
+	//	Zn c2(4);
+	//	cout << c1 + c2;
+	//	cout << endl;
+
+	//	Zn** contrM = create_M2();
+	//	Zn** contrM2 = create_M2();
+	//	MatrixZn cMatrZn(contrM, 3, 3);
+	//	MatrixZn cMatrZn2(contrM2, 3, 3);
+	//	//MatrixZn cMatrZn2(contrM2, 2, 3); //бросит исключение not_a_square_matrix
+
+	//	cout << endl << "get an element from matrix" << endl;
+	//	//cout << cMatrZn(1, 7); //бросит исключение out_of_array
+	//	cout << cMatrZn(1, 2);
+	//	cout << endl;
+
+	//	cout << endl << "concatention" << endl;
+	//	cout << "(M1) 1st matrix:" << endl;
+	//	cout << cMatrZn;
+	//	cout << "(M2) 2nd matrix:" << endl;
+	//	cout << cMatrZn2;
+	//	cout << "result" << endl;
+	//	MatrixZn cMatrZn3(cMatrZn | cMatrZn2);
+	//	cout << cMatrZn3;
+	//	cout << endl;
+
+	//	cout << "transposition M1" << endl;
+	//	MatrixZn cMatrZn4 = ~cMatrZn;
+	//	cout << cMatrZn4;
+	//	cout << endl;
+
+	//	cout << "class object * matrix" << endl;
+	//	MatrixZn cMatrZn5 = cMatrZn * c1;
+	//	cout << cMatrZn5;
+	//	cout << endl;
+
+	//	fstream f("Text.txt", ios_base::in | ios_base::out);
+	//	cout << "//////////////////////////////" << endl;
+	//	f >> cMatrZn;
+	//	cout << cMatrZn << endl;
+	//}
+	//catch (const Error& err)
+	//{
+	//	switch (err.ErrType())
+	//	{
+	//	case not_a_square_matrix:
+	//		cerr << "Matrix must be square!!";
+	//		break;
+	//	case out_of_array:
+	//		cerr << "out of the array";
+	//		break;
+	//	}
+	//}
+	try
+	{
+	MatrixZn<int>;
+	int** m1 = create_M1();
+	int** m2 = create_M2();
+	MatrixZn<int> matr(m1, 2, 2);
+	MatrixZn<int> matr2(m1, 2, 2);
+	//cout << /* static_cast<MatrixZn<int>&>*/(matr)<<endl; //ok
+	//cout << (matr|matr2)<<endl; //ok
+	for_each(matr.begin(), matr.end(), addNum);
+
+	}
+	catch (exception& e)
+	{
+		cerr<< e.what()<<endl;
+	}
+	system("pause");
+	return 0;
+}

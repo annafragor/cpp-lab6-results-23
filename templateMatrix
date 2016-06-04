@@ -7,6 +7,7 @@ using namespace std;
 const int not_a_square_matrix = 0;
 const int out_of_array = 1;
 
+
 class Error
 {
 private:
@@ -59,9 +60,29 @@ ostream& operator << (ostream& c, Zn& obj)
 	return c;
 }
 
-void addNum(int& k/*, T param*/) //bind???
+void addNum(int& k)
 {
-	k+=5;
+	k += 5;
+	return;
+}
+void addIndex(int& k)
+{
+	static int ind = 0;
+	ind++;
+	if (ind % 3 == 0)
+		k += 3;
+	else if (ind % 3 == 1)
+		k += 1;
+	else if (ind % 3 == 2)
+		k += 2;
+}
+bool isAnswer(int& k)
+{
+	//5x-75=0
+	if (k == 75 / 5)
+		return true;
+	else
+		return false;
 }
 
 
@@ -77,7 +98,7 @@ public:
 	MatrixZn(T** matr_v, int n_v, int m_v) : n(n_v), m(m_v)
 	{
 		if (n != m) throw Error(not_a_square_matrix);
-		T** matr = new T*[n];
+		matr = new T*[n];
 		for (unsigned int i = 0; i < n; i++)
 		{
 			matr[i] = new T[m];
@@ -114,7 +135,7 @@ public:
 				}
 			}
 		}
-		
+
 	}
 	MatrixZn(const MatrixZn& obj) //конструктор копирования
 	{
@@ -194,20 +215,18 @@ public:
 		int mI;//столбцы
 		int index;
 	public:
-		Iterator(T** matr, int n, int m, int it): nI(n), mI(m), matrI(matr), index(it){};
+		Iterator(T** matr, int n, int m, int it) : nI(n), mI(m), matrI(matr), index(it){};
 		Iterator operator ++()
 		{
 			index++;
 			return *this;
 		}
-
 		T& operator *()
 		{
 			if (index >= nI*mI)
 				throw out_of_range("out of range");
-			return matrI[index/nI][index % nI];
+			return matrI[index / nI][index % nI];
 		}
-
 		Iterator operator + (int n)
 		{
 			if (index + n >= nI*mI)
@@ -219,18 +238,16 @@ public:
 		{
 			if (index >= nI*mI)
 				throw out_of_range("out of range");
-			return *(matrI[index/n][insdex % n]);
+			return *(matrI[index / n][insdex % n]);
+		}
+		bool operator ==(Iterator obj)
+		{
+			return (index == obj.index);
 		}
 		bool operator !=(Iterator obj)
 		{
-			return true;
+			return !(*this == obj);
 		}
-
-		bool operator ==(Iterator obj)
-		{
-			return true;
-		}
-
 	};
 
 	Iterator begin()
@@ -241,9 +258,7 @@ public:
 	{
 		return Iterator(matr, n, m, n*m);
 	}
-
-
-
+	
 	friend fstream& operator << (fstream&, MatrixZn&);
 	friend fstream& operator >> (fstream&, MatrixZn&);
 	template <class T>
@@ -253,7 +268,7 @@ public:
 	{
 		for (unsigned int i = 0; i < n; i++)
 		{
-			delete [] matr[i];
+			delete[] matr[i];
 		}
 		delete[] matr;
 	}
@@ -339,89 +354,45 @@ int** create_M2()
 	return contrM2;
 }
 
-//template <>
-//class Vector
-//{
-//	char* arr;
-//public:
-//};
-
-
 int main()
 {
-	//try
-	//{
-		/*поток fstream - по умолчанию открывается для ввода вывода
-		ifstream - по умолчанию для ввода
-		ofstreamи - по умолчанию для вывода*/
-	//	Zn c1(4);
-	//	Zn c2(4);
-	//	cout << c1 + c2;
-	//	cout << endl;
-
-	//	Zn** contrM = create_M2();
-	//	Zn** contrM2 = create_M2();
-	//	MatrixZn cMatrZn(contrM, 3, 3);
-	//	MatrixZn cMatrZn2(contrM2, 3, 3);
-	//	//MatrixZn cMatrZn2(contrM2, 2, 3); //бросит исключение not_a_square_matrix
-
-	//	cout << endl << "get an element from matrix" << endl;
-	//	//cout << cMatrZn(1, 7); //бросит исключение out_of_array
-	//	cout << cMatrZn(1, 2);
-	//	cout << endl;
-
-	//	cout << endl << "concatention" << endl;
-	//	cout << "(M1) 1st matrix:" << endl;
-	//	cout << cMatrZn;
-	//	cout << "(M2) 2nd matrix:" << endl;
-	//	cout << cMatrZn2;
-	//	cout << "result" << endl;
-	//	MatrixZn cMatrZn3(cMatrZn | cMatrZn2);
-	//	cout << cMatrZn3;
-	//	cout << endl;
-
-	//	cout << "transposition M1" << endl;
-	//	MatrixZn cMatrZn4 = ~cMatrZn;
-	//	cout << cMatrZn4;
-	//	cout << endl;
-
-	//	cout << "class object * matrix" << endl;
-	//	MatrixZn cMatrZn5 = cMatrZn * c1;
-	//	cout << cMatrZn5;
-	//	cout << endl;
-
-	//	fstream f("Text.txt", ios_base::in | ios_base::out);
-	//	cout << "//////////////////////////////" << endl;
-	//	f >> cMatrZn;
-	//	cout << cMatrZn << endl;
-	//}
-	//catch (const Error& err)
-	//{
-	//	switch (err.ErrType())
-	//	{
-	//	case not_a_square_matrix:
-	//		cerr << "Matrix must be square!!";
-	//		break;
-	//	case out_of_array:
-	//		cerr << "out of the array";
-	//		break;
-	//	}
-	//}
 	try
 	{
-	MatrixZn<int>;
-	int** m1 = create_M1();
-	int** m2 = create_M2();
-	MatrixZn<int> matr(m1, 2, 2);
-	MatrixZn<int> matr2(m1, 2, 2);
-	//cout << /* static_cast<MatrixZn<int>&>*/(matr)<<endl; //ok
-	//cout << (matr|matr2)<<endl; //ok
-	for_each(matr.begin(), matr.end(), addNum);
+		int** m1 = create_M1();
+		int** m2 = create_M2();
+		MatrixZn<int> matr(m1, 2, 2);
+		MatrixZn<int> matr2(m1, 2, 2);
 
+		for (auto i = matr.begin(); i != matr.end(); i++)
+			cout << *i << " ";
+		cout << endl;
+
+		for_each(matr.begin(), matr.end(), addNum);
+		for (auto i = matr.begin(); i != matr.end(); i++)
+			cout << *i << " ";
+		cout << endl;
+
+		for_each(matr.begin(), matr.end(), addIndex);
+		for (auto i = matr.begin(); i != matr.end(); i++)
+			cout << *i << " ";
+		cout << endl;
+
+		int myCount = count(matr.begin(), matr.end(), 13);
+		cout << "num of 13 = " << myCount << endl;
+
+		//количество элементов удовл kx + b = 0
+		int myCountIf = count_if(matr.begin(), matr.end(), isAnswer);
+		cout << "num of answers 5x - 75 = 0: " << myCountIf << endl;
+
+		auto result = find(matr.begin(), matr.end(), 7);
+		if (result != matr.end())
+			cout << "7 exist in matr" << endl;
+		else
+			cout << "7 doesn't exist in matr" << endl;
 	}
 	catch (exception& e)
 	{
-		cerr<< e.what()<<endl;
+		cerr << e.what() << endl;
 	}
 	system("pause");
 	return 0;
